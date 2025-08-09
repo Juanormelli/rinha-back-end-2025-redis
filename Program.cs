@@ -26,7 +26,7 @@ GCSettings.LatencyMode = GCLatencyMode.LowLatency;
 
 var services = builder.Services;
 
-services.AddScoped<IDatabase>(cfg => {
+services.AddSingleton<IDatabase>(cfg => {
   var connection = ConnectionMultiplexer.Connect("redis:6379,abortConnect=false,connectTimeout=5000,syncTimeout=5000");
   return connection.GetDatabase();
 

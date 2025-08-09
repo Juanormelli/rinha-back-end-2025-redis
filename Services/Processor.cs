@@ -20,7 +20,7 @@ public class Processor {
       TypeInfoResolver = PaymentsSerializerContext.Default
     };
     _clientFactory = clientFactory;
-    PaymentQueue.Buffer(TimeSpan.FromMilliseconds(5000)).Subscribe(async x => SendRequestToPaymentProcessor(x));
+    PaymentQueue.Buffer(TimeSpan.FromMilliseconds(100)).Subscribe(async x => SendRequestToPaymentProcessor(x));
   }
 
   async private Task SendRequestToPaymentProcessor (IList<PaymentModel> payments) {

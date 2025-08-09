@@ -26,7 +26,7 @@ public static class WebApi {
       var summaryDefault = new PaymentSummaryModel();
       var summaryFallback = new PaymentSummaryModel();
 
-      var abc = await manager.GetPaymentAsync("payments");
+      var abc = await manager.GetPaymentAsync("payment");
       var payments = abc?.Select(x => JsonSerializer.Deserialize<PaymentModel>(x, options)).Where(x => x != null).ToList() ?? new List<PaymentModel>();
 
       foreach (var payment in payments) {

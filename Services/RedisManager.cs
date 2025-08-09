@@ -9,7 +9,7 @@ public class RedisManager {
     _database = database;
   }
 
-  public async Task<bool> SetPaymentAsync (string key, RedisValue value) {
+  public async Task<bool> SetPaymentAsync (string key, string value) {
     return await _database.SetAddAsync(key, value);
   }
   public async Task<RedisValue[]?> GetPaymentAsync (string key) {

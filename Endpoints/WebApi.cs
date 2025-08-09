@@ -20,7 +20,7 @@ public static class WebApi {
 
     });
 
-    app.MapGet("/payments-summary", async ([FromQuery] string? from, [FromQuery] string? to, [FromServices] RedisManager manager) => {
+    app.MapGet("/payments-summary", async ([FromQuery] string? from, [FromQuery] string? to) => {
       DateTime? fromDate = string.IsNullOrEmpty(from) ? DateTime.MinValue : DateTime.Parse(from, null, System.Globalization.DateTimeStyles.AdjustToUniversal);
       DateTime? toDate = string.IsNullOrEmpty(to) ? DateTime.MaxValue : DateTime.Parse(to, null, System.Globalization.DateTimeStyles.AdjustToUniversal);
       var redisValues = await RedisConnection.Database.ListRangeAsync("payments");

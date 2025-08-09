@@ -57,10 +57,10 @@ public class Processor {
       await policy.ExecuteAsync(async () => {
         var client = _clientFactory.CreateClient(payment.CurrentPaymentToProccess);
         payment.RequestedAt = DateTime.UtcNow;
-        //var response = await client.PostAsJsonAsync("/payments", payment, options);
-        //if (!response.IsSuccessStatusCode) {
-        //  return false;
-        //}
+        var response = await client.PostAsJsonAsync("/payments", payment, options);
+        if (!response.IsSuccessStatusCode) {
+          return false;
+        }
 
         _redisManager.SetData(JsonSerializer.Serialize(payment, options));
         return true;

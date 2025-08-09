@@ -2,6 +2,7 @@
 using rinha_back_end_2025.Model;
 using rinha_back_end_2025.Services;
 using rinha_back_end_2025.SourceGeneration;
+using StackExchange.Redis;
 using System.Text.Json;
 
 namespace rinha_back_end_2025.Endpoints;
@@ -22,36 +23,53 @@ public static class WebApi {
     app.MapGet("/payments-summary", async ([FromQuery] string? from, [FromQuery] string? to, [FromServices] RedisManager manager) => {
       DateTime? fromDate = string.IsNullOrEmpty(from) ? DateTime.MinValue : DateTime.Parse(from, null, System.Globalization.DateTimeStyles.AdjustToUniversal);
       DateTime? toDate = string.IsNullOrEmpty(to) ? DateTime.MaxValue : DateTime.Parse(to, null, System.Globalization.DateTimeStyles.AdjustToUniversal);
-
-      var summaryDefault = new PaymentSummaryModel();
-      var summaryFallback = new PaymentSummaryModel();
-
-      var abc = await manager.ReadData();
-      var payments = abc?.Select(x => JsonSerializer.Deserialize<PaymentModel>(x, options)).Where(x => x != null).ToList() ?? new List<PaymentModel>();
-
-      foreach (var payment in payments) {
-        var requestedAt = payment.RequestedAt;
-        if (requestedAt >= fromDate && requestedAt <= toDate) {
-          summaryDefault.AddRequest(payment);
-        }
-      }
-      using var stream = new MemoryStream();
-      using var writer = new Utf8JsonWriter(stream, new JsonWriterOptions { Indented = false });
-
-      writer.WriteStartObject();
-
-      writer.WritePropertyName("default");
-      summaryDefault.WriteTo(writer);
-
-      writer.WritePropertyName("fallback");
-      summaryFallback.WriteTo(writer);
-
-      writer.WriteEndObject();
-      writer.Flush();
-
+      var redisValues = await RedisConnection.Database.ListRangeAsync("payments");
+      var stream = DeserializePayments(redisValues, options, fromDate, toDate);
       return Results.File(stream.ToArray(), "application/json");
 
     });
 
+  }
+  private static readonly List<PaymentModel> EmptyPayments = new(0);
+
+  public static MemoryStream DeserializePayments (IReadOnlyList<RedisValue> values, JsonSerializerOptions options, DateTime? from, DateTime? to) {
+    if (values == null || values.Count == 0)
+      return null;
+
+    var summaryDefault = new PaymentSummaryModel();
+    var summaryFallback = new PaymentSummaryModel();
+
+    var list = new List<PaymentModel>(values.Count); // capacidade já definida
+
+    for (int i = 0; i < values.Count; i++) {
+      var val = values[i];
+      if (val.IsNullOrEmpty)
+        continue;
+
+      try {
+        var model = JsonSerializer.Deserialize<PaymentModel>(val, options);
+        var requestedAt = model.RequestedAt;
+        if (requestedAt >= from && requestedAt <= to) {
+          summaryDefault.AddRequest(model);
+        }
+      } catch {
+      }
+    }
+
+    using var stream = new MemoryStream();
+    using var writer = new Utf8JsonWriter(stream, new JsonWriterOptions { Indented = false });
+
+    writer.WriteStartObject();
+
+    writer.WritePropertyName("default");
+    summaryDefault.WriteTo(writer);
+
+    writer.WritePropertyName("fallback");
+    summaryFallback.WriteTo(writer);
+
+    writer.WriteEndObject();
+    writer.Flush();
+
+    return stream;
   }
 }

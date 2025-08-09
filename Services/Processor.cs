@@ -25,7 +25,7 @@ public class Processor {
     _clientFactory = clientFactory;
     _redisManager = redisManager;
     repository1 = repository;
-    PaymentQueue.Buffer(TimeSpan.FromMilliseconds(100)).Subscribe(async x => SendRequestToPaymentProcessor(x));
+    PaymentQueue.Buffer(TimeSpan.FromMilliseconds(1000)).Subscribe(async x => SendRequestToPaymentProcessor(x));
   }
 
   async private Task SendRequestToPaymentProcessor (IList<PaymentModel> payments) {
@@ -61,17 +61,11 @@ public class Processor {
         if (!response.IsSuccessStatusCode) {
           return false;
         }
-
-        _redisManager.SetData(JsonSerializer.Serialize(payment, options));
+        await _redisManager.SetData(JsonSerializer.Serialize(payment, options));
         return true;
       });
 
     }
 
-  }
-  async Task SyncPayments (IList<PaymentModel> payments) {
-    foreach (var payment in payments) {
-      repository1._paymentSummary.TryAdd(payment.CorrelationId, payment);
-    }
   }
 }

@@ -13,10 +13,9 @@ public class RedisManager {
     await db.ListLeftPushAsync(ListaChave, valor, flags: CommandFlags.FireAndForget);
   }
 
-  // Lê todos os dados como lista
   public async Task<RedisValue[]> ReadData () {
     var db = RedisConnection.Database;
-    return await db.ListRangeAsync(ListaChave, 0, -1);
+    return await db.ListRangeAsync(ListaChave);
 
   }
 

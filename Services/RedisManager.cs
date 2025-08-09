@@ -4,16 +4,20 @@ namespace rinha_back_end_2025.Services;
 
 public class RedisManager {
 
-  private readonly IDatabase _database;
-  public RedisManager (IDatabase database) {
-    _database = database;
+
+  private const string ListaChave = "payments";
+
+  // Escreve um dado individualmente
+  public async Task SetData (string valor) {
+    var db = RedisConnection.Database;
+    await db.ListLeftPushAsync(ListaChave, valor, flags: CommandFlags.FireAndForget);
   }
 
-  public async Task<bool> SetPaymentAsync (string key, string value) {
-    return await _database.SetAddAsync(key, value);
-  }
-  public async Task<RedisValue[]?> GetPaymentAsync (string key) {
-    return await _database.SetMembersAsync(key);
+  // Lê todos os dados como lista
+  public async Task<RedisValue[]> ReadData () {
+    var db = RedisConnection.Database;
+    return await db.ListRangeAsync(ListaChave, 0, -1);
+
   }
 
 }

@@ -1,7 +1,6 @@
 using rinha_back_end_2025;
 using rinha_back_end_2025.Endpoints;
 using rinha_back_end_2025.Services;
-using StackExchange.Redis;
 using System.Runtime;
 
 var builder = WebApplication.CreateSlimBuilder(args);
@@ -26,11 +25,7 @@ GCSettings.LatencyMode = GCLatencyMode.LowLatency;
 
 var services = builder.Services;
 
-services.AddSingleton<IDatabase>(cfg => {
-  var connection = ConnectionMultiplexer.Connect("redis:6379,abortConnect=false,connectTimeout=5000,syncTimeout=5000");
-  return connection.GetDatabase();
-
-});
+_ = RedisConnection.Connection;
 
 services.AddSingleton<RedisManager>();
 

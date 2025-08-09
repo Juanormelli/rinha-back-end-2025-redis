@@ -13,6 +13,8 @@ public class Processor {
   private readonly IHttpClientFactory _clientFactory;
   public IObservable<PaymentModel> PaymentQueue => paymentQueue.AsObservable();
   public JsonSerializerOptions options;
+  public string bufferSize1 => Environment.GetEnvironmentVariable("BUFFER1") ?? "100";
+  public string bufferSize2 => Environment.GetEnvironmentVariable("BUFFER2") ?? "100";
 
   public Processor (Repository repository, IHttpClientFactory clientFactory) {
     options = new JsonSerializerOptions()
@@ -20,7 +22,7 @@ public class Processor {
       TypeInfoResolver = PaymentsSerializerContext.Default
     };
     _clientFactory = clientFactory;
-    PaymentQueue.Buffer(TimeSpan.FromMilliseconds(100)).Subscribe(async x => SendRequestToPaymentProcessor(x));
+    PaymentQueue.Buffer(TimeSpan.FromMilliseconds(int.Parse(bufferSize1))).Subscribe(async x => SendRequestToPaymentProcessor(x));
   }
 
   async private Task SendRequestToPaymentProcessor (IList<PaymentModel> payments) {
@@ -45,7 +47,7 @@ public class Processor {
         }
         return false;
       })
-      .WaitAndRetryAsync(1000, (i) => TimeSpan.FromMilliseconds(1));
+      .WaitAndRetryAsync(1000, (i) => TimeSpan.FromMilliseconds(int.Parse(bufferSize2)));
 
     foreach (var payment in payments) {
 

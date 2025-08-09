@@ -10,7 +10,7 @@ public class RedisManager {
   // Escreve um dado individualmente
   public async Task SetData (string valor) {
     var db = RedisConnection.Database;
-    await db.ListLeftPushAsync(ListaChave, valor, flags: CommandFlags.FireAndForget);
+    await db.ListRightPushAsync(ListaChave, valor, flags: CommandFlags.FireAndForget);
   }
 
   public async Task<RedisValue[]> ReadData () {

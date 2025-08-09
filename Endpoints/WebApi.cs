@@ -19,23 +19,17 @@ public static class WebApi {
 
     });
 
-    app.MapGet("/payments-summary", async ([FromQuery] string? from, [FromQuery] string? to, [FromServices] Processor processor) => {
+    app.MapGet("/payments-summary", async ([FromQuery] string? from, [FromQuery] string? to, [FromServices] RedisManager manager) => {
       DateTime? fromDate = string.IsNullOrEmpty(from) ? DateTime.MinValue : DateTime.Parse(from, null, System.Globalization.DateTimeStyles.AdjustToUniversal);
       DateTime? toDate = string.IsNullOrEmpty(to) ? DateTime.MaxValue : DateTime.Parse(to, null, System.Globalization.DateTimeStyles.AdjustToUniversal);
 
       var summaryDefault = new PaymentSummaryModel();
       var summaryFallback = new PaymentSummaryModel();
 
-      var httpClient = new HttpClient() { BaseAddress = new Uri(Environment.GetEnvironmentVariable("workerSync")) };
-      var abc = await httpClient.GetFromJsonAsync<List<PaymentModel>>($"/sync?from={from}&to={to}", options);
+      var abc = await manager.GetPaymentAsync("payments");
+      var payments = abc?.Select(x => JsonSerializer.Deserialize<PaymentModel>(x, options)).Where(x => x != null).ToList() ?? new List<PaymentModel>();
 
-      foreach (var payment in abc) {
-        processor.paymentSync.OnNext(payment);
-        if (!processor.repository1._paymentSummary.TryGetValue(payment.CorrelationId, out _))
-          summaryDefault.AddRequest(payment);
-      }
-
-      foreach (var payment in processor.repository1._paymentSummary.Values) {
+      foreach (var payment in payments) {
         var requestedAt = payment.RequestedAt;
         if (requestedAt >= fromDate && requestedAt <= toDate) {
           summaryDefault.AddRequest(payment);
@@ -59,18 +53,5 @@ public static class WebApi {
 
     });
 
-    app.MapGet("/sync", async ([FromQuery] string? from, [FromQuery] string? to, [FromServices] Processor processor) => {
-      DateTime fromDate = string.IsNullOrEmpty(from) ? DateTime.MinValue : DateTime.Parse(from, null, System.Globalization.DateTimeStyles.AdjustToUniversal);
-      DateTime toDate = string.IsNullOrEmpty(to) ? DateTime.MaxValue : DateTime.Parse(to, null, System.Globalization.DateTimeStyles.AdjustToUniversal);
-      var newList = new List<PaymentModel>();
-      foreach (var payment in processor.repository1._paymentSummary.Values) {
-        var requestedAt = payment.RequestedAt;
-        if (requestedAt >= fromDate && requestedAt <= toDate) {
-          newList.Add(payment);
-        }
-      }
-
-      return Results.Json(newList, options);
-    });
   }
 }

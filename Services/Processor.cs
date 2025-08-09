@@ -11,20 +11,21 @@ public class Processor {
   public Subject<PaymentModel> paymentQueue = new Subject<PaymentModel>();
   public Subject<PaymentModel> paymentSync = new Subject<PaymentModel>();
   private readonly IHttpClientFactory _clientFactory;
+  private readonly RedisManager _redisManager;
   public Repository repository1;
   public IObservable<PaymentModel> PaymentQueue => paymentQueue.AsObservable();
   public IObservable<PaymentModel> PaymentSync => paymentSync.AsObservable();
   public JsonSerializerOptions options;
 
-  public Processor (Repository repository, IHttpClientFactory clientFactory) {
+  public Processor (Repository repository, IHttpClientFactory clientFactory, RedisManager redisManager) {
     options = new JsonSerializerOptions()
     {
       TypeInfoResolver = PaymentsSerializerContext.Default
     };
     _clientFactory = clientFactory;
+    _redisManager = redisManager;
     repository1 = repository;
     PaymentQueue.Buffer(TimeSpan.FromMilliseconds(100)).Subscribe(async x => SendRequestToPaymentProcessor(x));
-    PaymentSync.Buffer(TimeSpan.FromMilliseconds(100)).Subscribe(async x => SyncPayments(x));
   }
 
   async private Task SendRequestToPaymentProcessor (IList<PaymentModel> payments) {
@@ -61,14 +62,12 @@ public class Processor {
           return false;
         }
         newList.Add(payment);
-        repository1._paymentSummary.TryAdd(payment.CorrelationId, payment);
+        _redisManager.SetPaymentAsync("payment", JsonSerializer.Serialize(payment, options));
         return true;
       });
 
-
     }
-    //var httpClient = new HttpClient() { BaseAddress = new Uri(Environment.GetEnvironmentVariable("workerSync")) };
-    //httpClient.PostAsJsonAsync("/sync", , options);
+
   }
   async Task SyncPayments (IList<PaymentModel> payments) {
     foreach (var payment in payments) {

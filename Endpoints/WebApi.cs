@@ -28,7 +28,18 @@ public static class WebApi {
         var stream = DeserializePayments(redisValues, options, fromDate, toDate);
         return Results.File(stream.ToArray(), "application/json");
       } catch {
-        return Results.Ok();
+        var summaryDefault = new PaymentSummaryModel();
+        var summaryFallback = new PaymentSummaryModel();
+        using var stream = new MemoryStream();
+        using var writer = new Utf8JsonWriter(stream, new JsonWriterOptions { Indented = false });
+        writer.WriteStartObject();
+        writer.WritePropertyName("default");
+        summaryDefault.WriteTo(writer);
+        writer.WritePropertyName("fallback");
+        summaryFallback.WriteTo(writer);
+        writer.WriteEndObject();
+        writer.Flush();
+        return Results.File(stream.ToArray(), "application/json");
       }
 
 

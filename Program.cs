@@ -27,12 +27,9 @@ var services = builder.Services;
 
 _ = RedisConnection.Connection;
 
-services.AddSingleton<RedisManager>();
-
-
 services.AddSingleton<Processor>();
 services.AddSingleton<Repository>();
-
+ThreadPool.SetMinThreads(workerThreads: 1024, completionPortThreads: 512);
 services.AddHttpClient("default", c => {
   c.BaseAddress = new System.Uri("http://payment-processor-default:8080");
 

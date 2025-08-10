@@ -46,8 +46,6 @@ public static class WebApi {
     });
 
   }
-  private static readonly List<PaymentModel> EmptyPayments = new(0);
-
   public static MemoryStream DeserializePayments (IReadOnlyList<RedisValue> values, JsonSerializerOptions options, DateTime? from, DateTime? to) {
     if (values == null || values.Count == 0)
       return null;
@@ -58,12 +56,12 @@ public static class WebApi {
     var list = new List<PaymentModel>(values.Count); // capacidade já definida
 
     for (int i = 0; i < values.Count; i++) {
-      var val = values[i];
-      if (val.IsNullOrEmpty)
+      var val = (byte[]?)values[i];
+      if (val == null)
         continue;
 
       try {
-        var model = JsonSerializer.Deserialize<PaymentModel>(val, options);
+        var model = JsonSerializer.Deserialize<PaymentModel>((ReadOnlySpan<byte>)val, options);
         var requestedAt = model.RequestedAt;
         if (requestedAt >= from && requestedAt <= to) {
           summaryDefault.AddRequest(model);

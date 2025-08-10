@@ -29,7 +29,7 @@ _ = RedisConnection.Connection;
 
 services.AddSingleton<Processor>();
 services.AddSingleton<Repository>();
-ThreadPool.SetMinThreads(workerThreads: 2500, completionPortThreads: 1250);
+ThreadPool.SetMinThreads(workerThreads: 1500, completionPortThreads: 512);
 services.AddHttpClient("default", c => {
   c.BaseAddress = new System.Uri("http://payment-processor-default:8080");
 
